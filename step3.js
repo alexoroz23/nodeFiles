@@ -2,45 +2,59 @@ const fs = require('fs');
 const process = require('process');
 const axios = require('axios');
 
-// Function to read and display file content
-function cat(path) {
+/** handle output: write to file if out given, else print */
+
+function handleOutput(text, out) {
+  if (out) {
+    fs.writeFile(out, text, 'utf8', function(err) {
+      if (err) {
+        console.error(`Couldn't write ${out}: ${err}`);
+        process.exit(1);
+      }
+    });
+  } else {
+    console.log(text);
+  }
+}
+
+/** read file at path and print it out. */
+
+function cat(path, out) {
   fs.readFile(path, 'utf8', function(err, data) {
     if (err) {
-      console.error(`Error reading ${path}:\n  ${err}`);
+      console.error(`Error reading ${path}: ${err}`);
       process.exit(1);
     } else {
-      console.log(data);
+      handleOutput(data, out);
     }
   });
 }
 
-// Function to fetch and display web content
-function webCat(url) {
-  axios.get(url)
-    .then(response => {
-      console.log(response.data);
-    })
-    .catch(error => {
-      console.error(`Error fetching ${url}:\n  ${error}`);
-      process.exit(1);
-    });
+/** read page at URL and print it out. */
+
+async function webCat(url, out) {
+  try {
+    let resp = await axios.get(url);
+    handleOutput(resp.data, out);
+  } catch (err) {
+    console.error(`Error fetching ${url}: ${err}`);
+    process.exit(1);
+  }
 }
 
-// Get command-line arguments excluding node and script name
-const args = process.argv.slice(2);
+let path;
+let out;
 
-if (args.length === 0) {
-  console.log('Usage: node step2.js <file-path> [<file-path2> ...]');
+if (process.argv[2] === '--out') {
+  out = process.argv[3];
+  path = process.argv[4];
 } else {
-  args.forEach(arg => {
-    // Check if the argument starts with 'http://' or 'https://' to determine type
-    if (arg.startsWith('http://') || arg.startsWith('https://')) {
-      webCat(arg); // Call webCat function for URLs
-    } else {
-      cat(arg); // Call cat function for file paths
-    }
-  });
+  path = process.argv[2];
 }
 
+if (path.slice(0, 4) === 'http') {
+  webCat(path, out);
+} else {
+  cat(path, out);
+}
 
-// Directly from solutions*
