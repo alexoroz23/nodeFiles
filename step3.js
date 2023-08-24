@@ -44,7 +44,7 @@ async function webCat(url, out) {
 
 let path;
 let out;
-
+console.log(process.argv[1])
 if (process.argv[2] === '--out') {
   out = process.argv[3];
   path = process.argv[4];
